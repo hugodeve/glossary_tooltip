@@ -6,6 +6,11 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\taxonomy\Entity\Term;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Messenger\MessengerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+
+
 
 /**
  * Implements hook_install().
@@ -48,15 +53,24 @@ function glossary_tooltip_entity_base_field_info(EntityTypeInterface $entity_typ
 
   return $fields;
 }
+/**
+ * Implements hook_help().
+ */
+function glossary_tooltip_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.glossary_tooltip':
+      return '<p>' . t('This module provides glossary tooltip functionality for node forms.') . '</p>';
+  }
+}
 
 /**
  * Implements hook_form_alter().
  */
-function glossary_tooltip_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+function glossary_tooltip_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
   \Drupal::messenger()->addMessage('<pre>' . print_r($form_id, TRUE) . '</pre>', 'warning');
   if ($form_id === 'node_article_edit_form') {
     $form['#validate'][] = 'glossary_tooltip_node_form_validate';
- }
+  }
 }
 
 /**
@@ -101,38 +115,38 @@ function glossary_tooltip_node_form_validate($form, FormStateInterface $form_sta
     return '<span class="glossary-tooltip glossary-highlight" data-description="' . htmlentities($description) . '">' . $term . '</span>';
   }, $body);
 
-  $node_id = $form_state->getFormObject()->getEntity()->id();
-  $node = \Drupal\node\Entity\Node::load($node_id);
-  $node->set("body", $body);  
-  $node->save(); // Save the modified node.
-  \Drupal::messenger()->addMessage('<pre>' . print_r($body, TRUE) . '</pre>', 'warning');
+  // Set the modified body back to the form state for further processing.
+  $form_state->setValue('body', $body);
+}
+
+/**
+ * Form submission callback for node form.
+ */
+function glossary_tooltip_node_form_submit($form, FormStateInterface $form_state) {
+  // Get the submitted node entity.
+  $node = $form_state->getFormObject()->getEntity();
+
+  // Save the modified body to the node.
+  $node->body->value = $form_state->getValue('body');
+  $node->save();
 
   // Attach JavaScript library and custom script.
   $form['#attached']['library'][] = 'core/drupal.dialog.ajax';
   $form['#attached']['library'][] = 'core/drupal.dialog.ajax-tabbing';
   $form['#attached']['library'][] = 'core/jquery.ui.tooltip';
-  $form['#attached']['drupalSettings']['glossary_tooltip']['selector'] = '.glossary-tooltip';
+
+  // Get the module or theme path.
+  $module_path = \Drupal::moduleHandler()->getModule('glossary_tooltip')->getPath();
+  $js_path = $module_path . '/js/glossary_tooltip.js';
 
   // Add custom JavaScript code.
-  $form['#attached']['drupalSettings']['glossary_tooltip']['script'] = "
-    (function ($, Drupal) {
-      Drupal.behaviors.glossaryTooltip = {
-        attach: function (context) {
-          $('.glossary-tooltip', context).each(function () {
-            var description = $(this).data('description');
-            console.log(description)
-            $(this).tooltip({
-              content: description,
-              show: {
-                effect: 'slide',
-                duration: 300
-              }
-            });
-          });
-        }
-      };
-    })(jQuery, Drupal);
-  ";
+  $form['#attached']['drupalSettings']['glossary_tooltip'] = [
+    'selector' => '.glossary-tooltip',
+    'script' => [
+      '#type' => 'file',
+      '#uri' => $js_path,
+    ],
+  ];
 }
 /**
  * Implements hook_preprocess_HOOK() for node templates.

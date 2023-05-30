@@ -1,9 +1,8 @@
-(function ($, Drupal) {
+(function ($, Drupal, drupalSettings) {
   Drupal.behaviors.glossaryTooltip = {
     attach: function (context) {
-      $('.glossary-tooltip', context).each(function () {
-        let description = $(this).data('description');
-        console.log(description)
+      $(drupalSettings.glossary_tooltip.selector, context).each(function () {
+        var description = $(this).data('description');
         $(this).tooltip({
           content: description,
           show: {
@@ -14,4 +13,4 @@
       });
     }
   };
-})(jQuery, Drupal);
+})(jQuery, Drupal, drupalSettings);
