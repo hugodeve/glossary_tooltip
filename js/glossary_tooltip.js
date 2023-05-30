@@ -13,44 +13,43 @@ function sendMessageToBackgroundScript(message) {
 (function ($, Drupal, drupalSettings) {
   Drupal.behaviors.glossaryTooltip = {
     attach: function (context) {
-      var selector = drupalSettings.glossaryTooltip && drupalSettings.glossaryTooltip.selector ? drupalSettings.glossaryTooltip.selector : '.glossary-tooltip';
+      let selector = drupalSettings.glossaryTooltip && drupalSettings.glossaryTooltip.selector ? drupalSettings.glossaryTooltip.selector : '.glossary-tooltip';
 
       $(selector, context).each(function () {
-        var $term = $(this);
+        let $term = $(this);
 
         if (!$term.hasClass('glossary-tooltip-processed')) {
-          var $tooltip = $('<div class="glossary-tooltip-tooltip"></div>');
-          var description = drupalSettings.glossaryTooltip.terms[$term.text()];
-          $tooltip.text(description);
+          let termText = $term.text();
+          let description = drupalSettings.glossaryTooltip.terms[termText];
+          console.log(description)
+          let $tooltip = $('<div class="glossary-tooltip-tooltip"></div>');
+          let $content = $('<div class="glossary-tooltip-content"></div>');
+          let $description = $('<span class="glossary-tooltip-description"></span>').html(highlightTerms(description, termText));
+          let $readMore = $('<a class="glossary-tooltip-read-more" href="#"></a>').text('Read more');
+
+          $content.append($description, $readMore);
+          $tooltip.append($content);
+
           $term.hover(
             function () {
-              $tooltip.appendTo('body');
+              $term.append($tooltip);
             },
             function () {
               $tooltip.remove();
             }
           );
-          $term.mousemove(function (e) {
-            $tooltip.css({
-              top: e.clientY + 10,
-              left: e.clientX + 10
-            });
-          });
 
           $term.addClass('glossary-tooltip-processed');
-
-          // Send a message to the background script and wait for the response
-          sendMessageToBackgroundScript({ processedTerm: $term.text() })
-            .then(function (response) {
-              // Handle the response from the background script
-              console.log(response);
-            })
-            .catch(function (error) {
-              // Handle any errors that occurred
-              console.error(error);
-            });
         }
       });
     }
   };
+
+  function highlightTerms(text, term) {
+    let regex = new RegExp('(' + term + ')', 'gi');
+
+    let highlightedText = text.replace(regex, '<span class="glossary-tooltip-highlight">$1</span>');
+
+    return highlightedText;
+  }
 })(jQuery, Drupal, drupalSettings);
