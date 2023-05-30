@@ -1,0 +1,10 @@
+glossary_tooltip:
+  version: VERSION
+  js:
+    js/glossary_tooltip.js: {}
+  dependencies:
+    - core/drupal.dialog.ajax
+    - core/drupal.dialog.ajax-tabbing
+    - core/jquery.ui.tooltip
+    - core/drupal
+    - core/once

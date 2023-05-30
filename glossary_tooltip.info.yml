@@ -1,0 +1,7 @@
+name: 'Glossary Tooltip'
+type: module
+description: 'Highlights glossary terms in content and adds tooltips with descriptions.'
+core_version_requirement: ^8 || ^9 || ^10
+package: Custom
+dependencies:
+  - node
