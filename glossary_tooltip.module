@@ -13,19 +13,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 
 /**
- * Implements hook_install().
- */
-function glossary_tooltip_install() {
-  // Create the vocabulary for glossary terms.
-  $vocabulary = \Drupal\taxonomy\Entity\Vocabulary::create([
-    'vid' => 'glossary',
-    'name' => 'Glossary',
-    'description' => 'Vocabulary for glossary terms.',
-  ]);
-  $vocabulary->save();
-}
-
-/**
  * Implements hook_uninstall().
  */
 function glossary_tooltip_uninstall() {
@@ -67,10 +54,10 @@ function glossary_tooltip_help($route_name, \Drupal\Core\Routing\RouteMatchInter
  * Implements hook_form_alter().
  */
 function glossary_tooltip_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
-  \Drupal::messenger()->addMessage('<pre>' . print_r($form_id, TRUE) . '</pre>', 'warning');
   if ($form_id === 'node_article_edit_form') {
     $form['#validate'][] = 'glossary_tooltip_node_form_validate';
   }
+  \Drupal::messenger()->addMessage('<pre>' . print_r($form_id, TRUE) . '</pre>', 'warning');
 }
 
 /**
@@ -99,7 +86,7 @@ function glossary_tooltip_node_form_validate($form, FormStateInterface $form_sta
         $term_entity = reset($term_entity);
         $term_description = $term_entity->get('description')->value;
         $description = !is_null($term_description) ? htmlentities($term_description) : '';
-        $replacement = '<span class="glossary-tooltip glossary-highlight" data-description="' . $description . '">' . $term . '</span>';
+        $replacement = '<span class="glossary-tooltip glossary-highlight" data-description="' . $description . '" style="display: none;">' . $term . '</span>';
         $body = preg_replace($term_pattern, $replacement, $body);
       }
     }
@@ -155,34 +142,12 @@ function glossary_tooltip_preprocess_node(&$variables) {
   // Add necessary CSS and JavaScript.
   $variables['#attached']['library'][] = 'glossary_tooltip/glossary_tooltip';
 }
-
-/**
- * Implements hook_form().
- */
-function glossary_tooltip_form($form, FormStateInterface $form_state) {
-  $form['title'] = [
-    '#type' => 'textfield',
-    '#title' => 'Title',
-    '#required' => TRUE,
-  ];
-  $form['description'] = [
-    '#type' => 'textarea',
-    '#title' => 'Description',
-    '#required' => TRUE,
-  ];
-  $form['submit'] = [
-    '#type' => 'submit',
-    '#value' => 'Add Term',
-  ];
-  return $form;
-}
-
 /**
  * Form submit callback.
  */
 function glossary_tooltip_form_submit($form, FormStateInterface $form_state) {
   $title = $form_state->getValue('title');
-  $description = $form_state->getValue('description');
+  $description = $form_state->getValue('field_glossary_description');
 
   $term = \Drupal\taxonomy\Entity\Term::create([
     'vid' => 'glossary',
@@ -191,7 +156,7 @@ function glossary_tooltip_form_submit($form, FormStateInterface $form_state) {
   ]);
   $term->save();
 
-  drupal_set_message('Term added successfully.');
+  \Drupal::service('messenger')->addMessage('Term added successfully.');
 }
 
 /**
@@ -203,19 +168,23 @@ function glossary_tooltip_node_presave(EntityInterface $entity) {
 
     // Retrieve the glossary terms from the vocabulary.
     $query = \Drupal::entityQuery('taxonomy_term');
-    $query->condition('vid', 'glossary_terms');
+    $query->condition('vid', 'glossary');
     $term_ids = $query->accessCheck(FALSE)->execute();
 
     $terms = Term::loadMultiple($term_ids);
 
     // Loop through each term and check if it exists in the content.
     foreach ($terms as $term) {
-      $title = $term->get('field_glossary_title')->value;
+      $title = $term->getName();
 
       if (stripos($content, $title) !== false) {
-        $description = $term->get('field_glossary_description')->value;
-        // Add the tooltip or description logic here to display it for the matched term.
+        $description = $term->get('description')->value;
+        $replacement = '<span class="glossary-tooltip glossary-highlight" data-description="' . ($description ? htmlentities($description) : '') . '">' . $title . '</span>';
+        $content = str_ireplace($title, $replacement, $content);
       }
     }
+
+    // Update the field value with the modified content.
+    $entity->body->value = $content;
   }
 }
