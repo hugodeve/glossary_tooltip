@@ -10,46 +10,41 @@ function sendMessageToBackgroundScript(message) {
   });
 }
 
-(function ($, Drupal, drupalSettings) {
-  Drupal.behaviors.glossaryTooltip = {
+(function ($) {
+  Drupal.behaviors.glossary_tooltip = {
     attach: function (context) {
-      let selector = drupalSettings.glossaryTooltip && drupalSettings.glossaryTooltip.selector ? drupalSettings.glossaryTooltip.selector : '.glossary-tooltip';
+      $(once('glossary-tooltip', '.glossary-highlight', context)).each(function () { 
+        const $term = $(this);
+        const description = $term.data('description');
+        const truncatedDescription = truncateDescription(description, 100);
+        const $tooltipContent = $('<span class="glossary-tooltiptext">' + truncatedDescription + '</span>');
+        const $readMoreLink = $('<a href="/glossary/' + encodeURIComponent($term.text()) + '">Read more</a>');
+        
+        $term.addClass('glossary-term');
+        $term.addClass('glossary-tooltip');
 
-      $(selector, context).each(function () {
-        let $term = $(this);
+        $term.append($tooltipContent);
+        $term.append($readMoreLink);
 
-        if (!$term.hasClass('glossary-tooltip-processed')) {
-          let termText = $term.text();
-          let description = drupalSettings.glossaryTooltip.terms[termText];
-          console.log(description)
-          let $tooltip = $('<div class="glossary-tooltip-tooltip"></div>');
-          let $content = $('<div class="glossary-tooltip-content"></div>');
-          let $description = $('<span class="glossary-tooltip-description"></span>').html(highlightTerms(description, termText));
-          let $readMore = $('<a class="glossary-tooltip-read-more" href="#"></a>').text('Read more');
-
-          $content.append($description, $readMore);
-          $tooltip.append($content);
-
-          $term.hover(
-            function () {
-              $term.append($tooltip);
-            },
-            function () {
-              $tooltip.remove();
-            }
-          );
-
-          $term.addClass('glossary-tooltip-processed');
-        }
+        $term.hover(
+          function () {
+            $tooltipContent.show();
+          },
+          function () {
+            $tooltipContent.hide();
+          }
+        );
       });
     }
   };
 
-  function highlightTerms(text, term) {
-    let regex = new RegExp('(' + term + ')', 'gi');
-
-    let highlightedText = text.replace(regex, '<span class="glossary-tooltip-highlight">$1</span>');
-
-    return highlightedText;
+  function truncateDescription(description, maxLength) {
+    if (description.length > maxLength) {
+      let truncatedString = description.substring(0, maxLength);
+      const lastSpaceIndex = truncatedString.lastIndexOf(' ');
+      truncatedString = truncatedString.substring(0, lastSpaceIndex);
+      return truncatedString;
+    }
+    return description;
   }
-})(jQuery, Drupal, drupalSettings);
+})(jQuery);

@@ -1,5 +1,8 @@
 glossary_tooltip:
   version: VERSION
+  css:
+    theme:
+      css/glossary_tooltip.css: {}
   js:
     js/glossary_tooltip.js: {}
   dependencies:
@@ -8,3 +11,4 @@ glossary_tooltip:
     - core/jquery.ui.tooltip
     - core/drupal
     - core/jquery
+    - core/once

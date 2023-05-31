@@ -27,6 +27,6 @@ span.glossary-tooltiptext {
   position: absolute;
   z-index: 1;
 }
-.glossary-tooltip-content:hover .glossary-tooltiptext {
+.glossary-tooltip:hover .glossary-tooltiptext {
   visibility: visible;
 }
