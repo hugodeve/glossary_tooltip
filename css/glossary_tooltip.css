@@ -3,18 +3,17 @@
 :root {
   --box-bg-color: #097969;
 }
-.glossary-tooltip {
-  background-color: red;
-  position: relative;
-  display: inline-block;
-  border-bottom: 1px solid var(--box-bg-color); /* If you want dots under the hoverable text */
-}
 span.glossary-tooltiptext {
   font-family: 'Roboto', sans-serif;
   font-size: 14px;
   line-height: 20px;
 }
-.glossary-tooltip .glossary-tooltiptext {
+.glossary-tooltip-content {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px solid var(--box-bg-color); /* If you want dots under the hoverable text */
+}
+.glossary-tooltip-content .glossary-tooltiptext {
   visibility: hidden;
   width: 291px;
   height: 110px;
@@ -27,6 +26,6 @@ span.glossary-tooltiptext {
   position: absolute;
   z-index: 1;
 }
-.glossary-tooltip:hover .glossary-tooltiptext {
+.glossary-tooltip-content:hover .glossary-tooltiptext {
   visibility: visible;
 }

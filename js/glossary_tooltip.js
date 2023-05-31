@@ -12,28 +12,19 @@ function sendMessageToBackgroundScript(message) {
 
 (function ($) {
   Drupal.behaviors.glossary_tooltip = {
+  
     attach: function (context) {
-      $(once('glossary-tooltip', '.glossary-highlight', context)).each(function () { 
+      $(once('glossary-tooltip', '.glossary-highlight', context)).each(function () {
         const $term = $(this);
         const description = $term.data('description');
+        console.log(description);
         const truncatedDescription = truncateDescription(description, 100);
         const $tooltipContent = $('<span class="glossary-tooltiptext">' + truncatedDescription + '</span>');
-        const $readMoreLink = $('<a href="/glossary/' + encodeURIComponent($term.text()) + '">Read more</a>');
         
         $term.addClass('glossary-term');
-        $term.addClass('glossary-tooltip');
+        $term.addClass('glossary-tooltip-content');
 
         $term.append($tooltipContent);
-        $term.append($readMoreLink);
-
-        $term.hover(
-          function () {
-            $tooltipContent.show();
-          },
-          function () {
-            $tooltipContent.hide();
-          }
-        );
       });
     }
   };
