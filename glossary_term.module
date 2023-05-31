@@ -10,19 +10,37 @@ use Drupal\taxonomy\Entity\Term;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Asset\AttachedAssetsInterface;
+use Drupal\Core\Asset\LibraryDiscoveryInterface;
+use Drupal\Core\Render\BubbleableMetadata;
+
+/**
+ * Implements hook_install().
+ */
+function glossary_term_install() {
+  // Create the vocabulary for glossary terms.
+  $vocabulary = \Drupal\taxonomy\Entity\Vocabulary::create([
+    'vid' => 'glossary',
+    'name' => 'Glossary',
+    'description' => 'Vocabulary for glossary terms.',
+  ]);
+  $vocabulary->save();
+}
 
 /**
  * Implements hook_uninstall().
- */
-function glossary_tooltip_uninstall() {
+**/
+
+function glossary_term_uninstall() {
   // Delete the vocabulary for glossary terms.
   $vocabulary = \Drupal\taxonomy\Entity\Vocabulary::load('glossary');
   $vocabulary->delete();
 }
+
 /**
  * Implements hook_entity_base_field_info().
  */
-function glossary_tooltip_entity_base_field_info(EntityTypeInterface $entity_type) {
+function glossary_term_entity_base_field_info(EntityTypeInterface $entity_type) {
   $fields = [];
 
   if ($entity_type->id() === 'node') {
@@ -35,8 +53,6 @@ function glossary_tooltip_entity_base_field_info(EntityTypeInterface $entity_typ
       ->setDisplayConfigurable('form', TRUE)
       ->setDisplayConfigurable('view', TRUE)
       ->setDefaultValue('')
-      ->setDisplayConfigurable('form', TRUE)
-      ->setDisplayConfigurable('view', TRUE)
       ->addPropertyConstraints('value', [
         'Length' => [
           'max' => 255,
@@ -51,9 +67,9 @@ function glossary_tooltip_entity_base_field_info(EntityTypeInterface $entity_typ
 /**
  * Implements hook_help().
  */
-function glossary_tooltip_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function glossary_term_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
   switch ($route_name) {
-    case 'help.page.glossary_tooltip':
+    case 'help.page.glossary_term':
       return '<p>' . t('This module provides glossary tooltip functionality for node forms.') . '</p>';
   }
 }
@@ -61,17 +77,20 @@ function glossary_tooltip_help($route_name, \Drupal\Core\Routing\RouteMatchInter
 /**
  * Implements hook_form_alter().
  */
-function glossary_tooltip_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+function glossary_term_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
   if (in_array($form_id, ['node_article_edit_form', 'node_page_edit_form'])) {
-    $form['#attached']['library'][] = 'glossary_tooltip/glossary_tooltip';
-    $form['#attached']['drupalSettings']['glossary_tooltip']['terms'] = glossary_tooltip_get_glossary_terms();
+    $form['#attached']['library'][] = 'core/drupal.dialog.ajax';
+    $form['#attached']['library'][] = 'core/drupal.dialog.ajax-tabbing';
+    $form['#attached']['library'][] = 'core/jquery.ui.tooltip';
+    $form['#attached']['library'][] = 'glossary_term/glossary_term';
+    $form['#attached']['drupalSettings']['glossary_term']['terms'] = glossary_term_get_glossary_terms();
   }
 }
 
 /**
  * Form validation callback for node form.
  */
-function glossary_tooltip_node_form_validate(&$form, FormStateInterface $form_state) {
+function glossary_term_node_form_validate(&$form, FormStateInterface $form_state) {
   $node = $form_state->getFormObject()->getEntity();
   $body = $node->get('body')->value;
 
@@ -86,23 +105,25 @@ function glossary_tooltip_node_form_validate(&$form, FormStateInterface $form_st
   foreach ($glossary_terms as $term) {
     $term_pattern = '/\b' . preg_quote($term, '/') . '\b/i';
     if (preg_match($term_pattern, $body)) {
-      $term_entity = reset($term_entity);
+      $term_entities = \Drupal::entityTypeManager()
+        ->getStorage('taxonomy_term')
+        ->loadByProperties(['name' => $term]);
+      $term_entity = reset($term_entities);
       $term_description = $term_entity->get('description')->value;
       $description = !empty($term_description) ? htmlentities($term_description) : '';
-      $replacement = '<span class="glossary-tooltip glossary-highlight" data-description="' . $description . '" style="display: none;">' . $term . '</span>';
+      $replacement = '<span class="glossary-term glossary-highlight" data-description="' . $description . '" style="display: none;">' . $term . '</span>';
       $body = preg_replace($term_pattern, $replacement, $body);
     }
   }
 
-  $body = preg_replace_callback('/<span class="glossary-tooltip glossary-highlight" data-description="([^"]+)">([^<]+)<\/span>/', function ($matches) {
+  $body = preg_replace_callback('/<span class="glossary-term glossary-highlight" data-description="([^"]+)">([^<]+)<\/span>/', function ($matches) {
     $description = $matches[1];
     $term = $matches[2];
     if (mb_strlen($description) > 100) {
       $description = mb_substr($description, 0, 100) . '...';
     }
-    return '<span class="glossary-tooltip glossary-highlight" data-description="' . htmlentities($description) . '">' . $term . '</span>';
+    return '<span class="glossary-term glossary-highlight" data-description="' . htmlentities($description) . '">' . $term . '</span>';
   }, $body);
-
 
   $node->set('body', $body);
 }
@@ -110,7 +131,7 @@ function glossary_tooltip_node_form_validate(&$form, FormStateInterface $form_st
 /**
  * Helper function to retrieve glossary terms.
  */
-function glossary_tooltip_get_glossary_terms() {
+function glossary_term_get_glossary_terms() {
   $glossary_terms = [];
   $terms = \Drupal::entityTypeManager()
     ->getStorage('taxonomy_term')
@@ -124,19 +145,17 @@ function glossary_tooltip_get_glossary_terms() {
   return $glossary_terms;
 }
 
-
-
 /**
  * Implements hook_preprocess_HOOK() for node templates.
  */
-function glossary_tooltip_preprocess_node(&$variables) {
-  $variables['#attached']['library'][] = 'glossary_tooltip/glossary_tooltip';
+function glossary_term_preprocess_node(&$variables) {
+  $variables['#attached']['library'][] = 'glossary_term/glossary_term';
 }
 
 /**
  * Form submission callback for node form.
  */
-function glossary_tooltip_node_form_submit($form, FormStateInterface $form_state) {
+function glossary_term_node_form_submit($form, FormStateInterface $form_state) {
   $node = $form_state->getFormObject()->getEntity();
   $node->body->value = $form_state->getValue('body');
   $node->save();
@@ -145,22 +164,21 @@ function glossary_tooltip_node_form_submit($form, FormStateInterface $form_state
   $form['#attached']['library'][] = 'core/drupal.dialog.ajax-tabbing';
   $form['#attached']['library'][] = 'core/jquery.ui.tooltip';
 
-  $module_path = \Drupal::moduleHandler()->getModule('glossary_tooltip')->getPath();
+  $module_path = \Drupal::moduleHandler()->getModule('glossary_term')->getPath();
 
-  $form['#attached']['drupalSettings']['glossary_tooltip'] = [
-    'selector' => '.glossary-tooltip',
-    'script' => $module_path . '/js/glossary_tooltip.js',
+  $form['#attached']['drupalSettings']['glossary_term'] = [
+    'selector' => '.glossary-term',
+    'script' => $module_path . '/js/glossary_term.js',
   ];
 }
 
- 
- 
 /**
  * Implements hook_ENTITY_TYPE_presave() for node entities.
  */
-function glossary_tooltip_node_presave(EntityInterface $entity) {
+function glossary_term_node_presave(EntityInterface $entity) {
   if ($entity->getEntityTypeId() === 'node') {
     $content = $entity->body->value;
+    $updatedContent = $content; // Create a copy of the original content for replacements.
 
     // Retrieve the glossary terms from the vocabulary.
     $query = \Drupal::entityQuery('taxonomy_term');
@@ -168,18 +186,32 @@ function glossary_tooltip_node_presave(EntityInterface $entity) {
     $term_ids = $query->accessCheck(FALSE)->execute();
     $terms = Term::loadMultiple($term_ids);
 
+    // Create an array to store the glossary terms and their descriptions.
+    $glossaryTerms = [];
+
     // Loop through each term and check if it exists in the content.
     foreach ($terms as $term) {
       $title = $term->getName();
 
       if (stripos($content, $title) !== false) {
         $description = $term->get('description')->value;
-        $replacement = '<span class="glossary-tooltip glossary-highlight" data-description="' . ($description ? htmlentities($description) : '') . '">' . $title . '</span>';
-        $content = str_ireplace($title, $replacement, $content);
+        $replacement = '<span class="glossary-term glossary-highlight" data-description="' . ($description ? htmlentities($description) : '') . '">' . $title . '</span>';
+        $updatedContent = str_ireplace($title, $replacement, $updatedContent);
+
+        // Add the glossary term and description to the array.
+        $glossaryTerms[$title] = $description;
       }
     }
 
     // Update the field value with the modified content.
-    $entity->body->value = $content;
+    $entity->body->value = $updatedContent;
+
+    // Strip HTML tags from the updated content.
+    $entity->body->value = strip_tags($entity->body->value);
+
+    // Add the glossary terms to the JavaScript settings object.
+    $settings = \Drupal::state()->get('glossary_term.settings', []);
+    $settings['terms'] = $glossaryTerms;
+    \Drupal::state()->set('glossary_term.settings', $settings);
   }
 }

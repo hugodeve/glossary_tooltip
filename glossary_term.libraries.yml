@@ -1,0 +1,15 @@
+glossary_term:
+  version: 1.x
+  js:
+    js/glossary_term.js: {}
+  css:
+    theme:
+      css/glossary_term.css: {}
+  dependencies:
+    - core/jquery
+    - core/jquery.ui.tooltip
+    - core/drupal.dialog.ajax
+    - core/drupal.dialog.ajax-tabbing
+    - core/drupal
+    - core/once
+    - views/view

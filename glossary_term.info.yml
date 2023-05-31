@@ -1,8 +1,8 @@
-name: 'Glossary Tooltip'
+name: 'Glossary Tooltip Term'
 type: module
 description: 'Highlights glossary terms in content and adds tooltips with descriptions.'
 core_version_requirement: ^8 || ^9 || ^10
-package: Custom
+package: HugoCustom
 dependencies:
   - core/drupal.dialog.ajax
   - core/drupal.dialog.ajax-tabbing
@@ -10,5 +10,6 @@ dependencies:
   - core/drupal
   - core/jquery
   - core/once
+  - drupal:views
 libraries:
-  - glossary_tooltip/glossary_tooltip
+  - glossary_term/glossary_term

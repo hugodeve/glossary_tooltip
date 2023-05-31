@@ -3,17 +3,17 @@
 :root {
   --box-bg-color: #097969;
 }
-span.glossary-tooltiptext {
+span.glossary-termtext {
   font-family: 'Roboto', sans-serif;
   font-size: 14px;
   line-height: 20px;
 }
-.glossary-tooltip-content {
+.glossary-term-content {
   position: relative;
   display: inline-block;
   border-bottom: 1px solid var(--box-bg-color); /* If you want dots under the hoverable text */
 }
-.glossary-tooltip-content .glossary-tooltiptext {
+.glossary-term-content .glossary-termtext {
   visibility: hidden;
   width: 291px;
   height: 110px;
@@ -26,6 +26,6 @@ span.glossary-tooltiptext {
   position: absolute;
   z-index: 1;
 }
-.glossary-tooltip-content:hover .glossary-tooltiptext {
+.glossary-term-content:hover .glossary-termtext {
   visibility: visible;
 }
