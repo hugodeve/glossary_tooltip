@@ -12,3 +12,4 @@ function glossary_tooltip_install() {
     $vocabulary->save();
   }
   
+  

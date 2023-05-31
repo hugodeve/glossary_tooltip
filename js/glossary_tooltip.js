@@ -9,22 +9,21 @@ function sendMessageToBackgroundScript(message) {
     });
   });
 }
-
 (function ($) {
-  Drupal.behaviors.glossary_tooltip = {
-  
+  Drupal.behaviors.glossaryTooltip = {
     attach: function (context) {
-      $(once('glossary-tooltip', '.glossary-highlight', context)).each(function () {
+      $('.glossary-highlight', context).each(function () {
+        alert('estoy aqui');
         const $term = $(this);
         const description = $term.data('description');
-        console.log(description);
         const truncatedDescription = truncateDescription(description, 100);
-        const $tooltipContent = $('<span class="glossary-tooltiptext">' + truncatedDescription + '</span>');
-        
-        $term.addClass('glossary-term');
-        $term.addClass('glossary-tooltip-content');
 
-        $term.append($tooltipContent);
+        $term.addClass('glossary-term');
+        $term.attr('title', truncatedDescription);
+        $term.tooltip({
+          show: { delay: 500 },
+          hide: { delay: 0 }
+        });
       });
     }
   };

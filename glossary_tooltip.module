@@ -145,7 +145,7 @@ function glossary_tooltip_node_form_submit($form, FormStateInterface $form_state
   $form['#attached']['library'][] = 'core/drupal.dialog.ajax-tabbing';
   $form['#attached']['library'][] = 'core/jquery.ui.tooltip';
 
-  $module_path = \Drupal::service('extension.list.module')->getPath('glossary_tooltip');
+  $module_path = \Drupal::moduleHandler()->getModule('glossary_tooltip')->getPath();
 
   $form['#attached']['drupalSettings']['glossary_tooltip'] = [
     'selector' => '.glossary-tooltip',
@@ -154,12 +154,13 @@ function glossary_tooltip_node_form_submit($form, FormStateInterface $form_state
 }
 
  
+ 
 /**
  * Implements hook_ENTITY_TYPE_presave() for node entities.
  */
 function glossary_tooltip_node_presave(EntityInterface $entity) {
-  if ($entity->getEntityTypeId() === 'node' && $entity->bundle() === 'article') {
-    $content = $entity->get('body')->getValue()[0]['value'];
+  if ($entity->getEntityTypeId() === 'node') {
+    $content = $entity->body->value;
 
     // Retrieve the glossary terms from the vocabulary.
     $query = \Drupal::entityQuery('taxonomy_term');
@@ -174,12 +175,11 @@ function glossary_tooltip_node_presave(EntityInterface $entity) {
       if (stripos($content, $title) !== false) {
         $description = $term->get('description')->value;
         $replacement = '<span class="glossary-tooltip glossary-highlight" data-description="' . ($description ? htmlentities($description) : '') . '">' . $title . '</span>';
-        $pattern = '/\b' . preg_quote($title, '/') . '\b/i';
-        $content = preg_replace($pattern, $replacement, $content);
+        $content = str_ireplace($title, $replacement, $content);
       }
     }
 
     // Update the field value with the modified content.
-    $entity->get('body')->setValue($content);
+    $entity->body->value = $content;
   }
 }
