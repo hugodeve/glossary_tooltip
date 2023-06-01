@@ -10,6 +10,8 @@ dependencies:
   - core/drupal
   - core/jquery
   - core/once
-  - drupal:views
+  - drupal/views
 libraries:
-  - glossary_term/glossary_term
+  - glossary_term/glossary_term/css
+  - glossary_term/glossary_term/js
+  - core/jquery.ui.tooltip
